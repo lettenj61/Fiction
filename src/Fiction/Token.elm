@@ -1,18 +1,20 @@
 module Fiction.Token exposing
     ( Analyzer
     , Token
+    , TokenKind(..)
     , analyze
     , fromString
+    , isSingleVowel
+    , isSingleVowel_
     , isVowel
     , toString
     , tokenize
     )
 
-import Array as Array exposing (Array)
-import Dict as Dict exposing (Dict)
+import Array exposing (Array)
+import Dict exposing (Dict)
 import Regex as Regex
-import Set as Set exposing (Set)
-import String as String
+import Set exposing (Set)
 
 
 
@@ -24,6 +26,11 @@ type alias Freq =
     , middle : Int
     , last : Int
     }
+
+
+type TokenKind
+    = Vowel
+    | Consonant
 
 
 type Token
@@ -58,6 +65,11 @@ analyze content =
     analyzeMore
         (String.words content)
         { tokens = Dict.empty }
+
+
+get : String -> Analyzer -> Maybe Entry
+get key { tokens } =
+    Dict.get key tokens
 
 
 
@@ -251,14 +263,26 @@ isVowel (Token repr) =
     String.all (\c -> Set.member c vowels) repr
 
 
-hasCloserFreq : String -> String -> Dict String Freq -> Bool
-hasCloserFreq t1 t2 freqs =
+isSingleVowel : Token -> Bool
+isSingleVowel (Token repr) =
+    isSingleVowel_ repr
+
+
+isSingleVowel_ : String -> Bool
+isSingleVowel_ tok =
+    String.length tok
+        == 1
+        && String.all (\c -> Set.member c vowels) tok
+
+
+hasCloserFreq : String -> String -> Analyzer -> Bool
+hasCloserFreq t1 t2 analyzer =
     let
         f1 =
-            Dict.get t1 freqs
+            Maybe.map .freq <| get t1 analyzer
 
         f2 =
-            Dict.get t2 freqs
+            Maybe.map .freq <| get t2 analyzer
 
         similar fa fb =
             (fa.head > 0)

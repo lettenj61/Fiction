@@ -5,4 +5,5 @@ elm-stuff
 # elm-repl generated files
 repl-temp-*
 
-
+fiction.js
+elm.min.js
