@@ -275,6 +275,23 @@ isSingleVowel_ tok =
         && String.all (\c -> Set.member c vowels) tok
 
 
+hasSameKinds : String -> String -> Analyzer -> Bool
+hasSameKinds k1 k2 analyzer =
+    let
+        t1 =
+            Maybe.map .token <| get k1 analyzer
+
+        t2 =
+            Maybe.map .token <| get k2 analyzer
+    in
+    case ( t1, t2 ) of
+        ( Just l, Just r ) ->
+            isVowel l == isVowel r
+
+        _ ->
+            False
+
+
 hasCloserFreq : String -> String -> Analyzer -> Bool
 hasCloserFreq t1 t2 analyzer =
     let
