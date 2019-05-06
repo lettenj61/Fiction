@@ -1,8 +1,11 @@
 module Fiction.Token exposing
     ( Analyzer
+    , Entry
     , Token
     , TokenKind(..)
     , analyze
+    , analyzeMore
+    , filterCandidate
     , fromString
     , isSingleVowel
     , isSingleVowel_
@@ -275,44 +278,87 @@ isSingleVowel_ tok =
         && String.all (\c -> Set.member c vowels) tok
 
 
-hasSameKinds : String -> String -> Analyzer -> Bool
-hasSameKinds k1 k2 analyzer =
+testEntry :
+    (Entry -> Entry -> Bool)
+    -> Analyzer
+    -> String
+    -> String
+    -> Bool
+testEntry pred analyzer tok1 tok2 =
     let
-        t1 =
-            Maybe.map .token <| get k1 analyzer
+        e1 =
+            get tok1 analyzer
 
-        t2 =
-            Maybe.map .token <| get k2 analyzer
+        e2 =
+            get tok2 analyzer
     in
-    case ( t1, t2 ) of
+    case ( e1, e2 ) of
         ( Just l, Just r ) ->
-            isVowel l == isVowel r
+            pred l r
 
         _ ->
             False
 
 
-hasCloserFreq : String -> String -> Analyzer -> Bool
-hasCloserFreq t1 t2 analyzer =
+hasSameKinds : Analyzer -> String -> String -> Bool
+hasSameKinds =
     let
-        f1 =
-            Maybe.map .freq <| get t1 analyzer
+        areBothVowels e1 e2 =
+            let
+                t1 =
+                    e1.token
 
-        f2 =
-            Maybe.map .freq <| get t2 analyzer
+                t2 =
+                    e2.token
+            in
+            isVowel t1 == isVowel t2
+    in
+    testEntry areBothVowels
 
-        similar fa fb =
+
+hasCloserFreq : Analyzer -> String -> String -> Bool
+hasCloserFreq =
+    let
+        samePositions e1 e2 =
+            let
+                fa =
+                    e1.freq
+
+                fb =
+                    e2.freq
+            in
             (fa.head > 0)
                 == (fb.head > 0)
                 && (fa.last > 0)
                 == (fb.last > 0)
     in
-    case ( f1, f2 ) of
-        ( Just l, Just r ) ->
-            similar l r
+    testEntry samePositions
 
-        _ ->
-            False
+
+areBothUniq : Analyzer -> String -> String -> Bool
+areBothUniq =
+    let
+        compare_ e1 e2 =
+            let
+                aCount =
+                    e1.count
+
+                bCount =
+                    e2.count
+            in
+            (aCount == 1) == (bCount == 1)
+    in
+    testEntry compare_
+
+
+filterCandidate : Analyzer -> String -> String -> Bool
+filterCandidate data tok =
+    \that ->
+        not (tok == that)
+            && not (isSingleVowel_ tok)
+            && areBothUniq data tok that
+            && hasSameKinds data tok that
+            && hasCloserFreq data tok that
 
 
 
